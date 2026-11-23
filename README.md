@@ -4,8 +4,7 @@ Browser simulator of the MTS-51 microcomputer trainer (P89V51RD2, 12 MHz) for RM
 
 **Open it:** https://mts51-simulation.github.io
 
-- 8051 core, assembler and Keil-C style compiler
-- LEDs, 7-segment displays, 74164, dot-matrix, keyboard, photo interrupters, LCD, speaker, step motor, Timer0
-- Lab programs and solved DIY tasks for every experiment
+Students sign in with Google and wait for the instructor's approval. The instructor chooses which lab programs and tasks are open.
+The simulator itself and the task solutions are stored in Firebase, not in this repository.
 
 Made by Eng. Hassan Kohla.

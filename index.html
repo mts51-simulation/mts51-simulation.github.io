@@ -1,3 +1,266 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MTS-51 Trainer Simulator</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#e9edef;color:#17212a;font:16px system-ui,sans-serif;padding:16px;box-sizing:border-box}div{max-width:520px;text-align:center}h1{font-size:24px}</style></head>
-<body><div><h1>MTS-51 Trainer Simulator</h1><p>The simulator is being set up. Please come back soon.</p></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MTS-51 Trainer Simulator</title>
+<style>
+/* Sign-in page and control panel. Names start with sh- so they never clash with the simulator's own styles. */
+:root { --sh-bg:#e9edef; --sh-panel:#fbfcfc; --sh-panel2:#f1f4f5; --sh-line:#cdd5da; --sh-ink:#17212a; --sh-ink2:#5b6a75; --sh-accent:#1f58b5; --sh-ok:#1d7f46; --sh-bad:#b4322a; }
+@media (prefers-color-scheme: dark) { :root { --sh-bg:#0e1316; --sh-panel:#151c21; --sh-panel2:#1b242a; --sh-line:#2a363e; --sh-ink:#e3eaee; --sh-ink2:#93a3ad; --sh-accent:#6ea3f3; --sh-ok:#4cc27e; --sh-bad:#ef7a6f; } }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--sh-bg); color: var(--sh-ink); font: 14px "IBM Plex Sans", system-ui, "Segoe UI", sans-serif; }
+#shApp { display: contents; }
+.sh-shell { max-width: 820px; margin: 0 auto; padding: 32px 16px; box-sizing: border-box; width: 100%; }
+.sh-shell { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.sh-box { background: var(--sh-panel); border: 1px solid var(--sh-line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.sh-box h1 { font-size: 22px; margin: 0 0 6px; } .sh-box h2 { font-size: 16px; margin: 0 0 10px; }
+.sh-box p { color: var(--sh-ink2); line-height: 1.55; margin: 0 0 12px; }
+.sh-btn { background: var(--sh-panel2); color: var(--sh-ink); border: 1px solid var(--sh-line); border-radius: 6px; padding: 8px 14px; cursor: pointer; font: inherit; }
+.sh-btn:hover { border-color: var(--sh-accent); }
+.sh-btn.primary { background: var(--sh-accent); color: #fff; border-color: var(--sh-accent); font-weight: 600; }
+.sh-btn.small { padding: 4px 10px; font-size: 13px; }
+.sh-btn.danger { color: var(--sh-bad); }
+.sh-input { background: var(--sh-panel2); color: var(--sh-ink); border: 1px solid var(--sh-line); border-radius: 6px; padding: 8px 10px; font: inherit; min-width: 0; flex: 1; }
+.sh-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sh-msg { font-size: 13px; color: var(--sh-ink2); min-height: 18px; margin-top: 8px; }
+.sh-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.sh-tabs button[aria-selected=true] { border-color: var(--sh-accent); color: var(--sh-accent); font-weight: 600; }
+ul.sh-list { list-style: none; padding: 0; margin: 8px 0 0; }
+ul.sh-list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--sh-line); }
+ul.sh-list li span { overflow-wrap: anywhere; }
+.sh-exp { border: 1px solid var(--sh-line); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: var(--sh-panel2); }
+.sh-exp header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.sh-exp header b { font-size: 15px; } .sh-exp header span { color: var(--sh-ink2); font-size: 12.5px; }
+.sh-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; }
+@media (max-width: 640px) { .sh-cols { grid-template-columns: 1fr; } }
+.sh-col h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--sh-ink2); margin: 6px 0 4px; display: flex; gap: 8px; align-items: center; }
+.sh-col label { display: flex; gap: 8px; align-items: flex-start; padding: 2px 0; cursor: pointer; font-size: 13px; }
+.sh-link { background: none; border: 0; color: var(--sh-accent); cursor: pointer; font: inherit; font-size: 12px; padding: 0; text-transform: none; letter-spacing: 0; }
+.sh-badge { background: var(--sh-bad); color: #fff; border-radius: 10px; padding: 0 7px; font-size: 12px; margin-left: 4px; }
+#shAdminBar { flex: none; background: color-mix(in srgb, var(--sh-accent) 14%, var(--sh-panel)); border-bottom: 1px solid var(--sh-accent); padding: 7px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+#shAdminBar b { color: var(--sh-accent); }
+#shUserBar { flex: none; display: flex; justify-content: flex-end; gap: 10px; align-items: center; padding: 4px 16px; color: var(--sh-ink2); font-size: 12.5px; }
+.sh-sticky { position: sticky; bottom: 0; background: var(--sh-panel); padding: 10px 0 0; border-top: 1px solid var(--sh-line); }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<div id="shAdminBar" hidden><b>Admin</b><button class="sh-btn small" id="shOpenAdmin" type="button">Control panel <span class="sh-badge" id="shReqBadge" hidden>0</span></button><span id="shAdminInfo" style="color:var(--sh-ink2)"></span></div>
+<div id="shUserBar" hidden><span id="shWho"></span><button class="sh-btn small" id="shSignOut" type="button">Sign out</button></div>
+
+<div class="sh-shell" id="shShell">
+  <div class="sh-box" id="shLoading"><h1>MTS-51 Trainer Simulator</h1><p>Loading…</p></div>
+
+  <div class="sh-box" id="shLogin" hidden>
+    <h1>MTS-51 Trainer Simulator</h1>
+    <p>RME353 · Microcontrollers Lab (Experiments 8–11). Sign in with your Google account. Your instructor must approve your account before you can open the simulator.</p>
+    <button class="sh-btn primary" id="shGoogle" type="button">Sign in with Google</button>
+    <div class="sh-msg" id="shLoginMsg"></div>
+  </div>
+
+  <div class="sh-box" id="shPending" hidden>
+    <h2>Waiting for approval</h2>
+    <p>Your request was sent to the instructor (<span id="shPendEmail"></span>). This page opens by itself as soon as you are approved.</p>
+  </div>
+
+  <div class="sh-box" id="shMissing" hidden>
+    <h2>The simulator is not installed yet</h2>
+    <p>Please come back later.</p>
+  </div>
+
+  <div id="shAdmin" hidden>
+    <div class="sh-box">
+      <div class="sh-row" style="justify-content:space-between"><h1>Control panel</h1><button class="sh-btn" id="shCloseAdmin" type="button">Back to the simulator</button></div>
+      <div class="sh-tabs" role="tablist">
+        <button class="sh-btn small" role="tab" aria-selected="true" data-shtab="shTabOpen" type="button">Open programs &amp; tasks</button>
+        <button class="sh-btn small" role="tab" aria-selected="false" data-shtab="shTabStudents" type="button">Students <span class="sh-badge" id="shReqBadge2" hidden>0</span></button>
+        <button class="sh-btn small" role="tab" aria-selected="false" data-shtab="shTabApp" type="button">Simulator file</button>
+      </div>
+
+      <section id="shTabOpen">
+        <p>Tick what students can see. An experiment with nothing ticked is locked. Task solutions are sent to a student only while the task is ticked.</p>
+        <div id="shOpenList"><p>Upload the simulator file first (Simulator file tab).</p></div>
+        <div class="sh-sticky sh-row"><button class="sh-btn primary" id="shSaveOpen" type="button">Save</button><span class="sh-msg" id="shOpenMsg" style="margin:0"></span></div>
+      </section>
+
+      <section id="shTabStudents" hidden>
+        <h2>Requests</h2>
+        <p>People who signed in but are not approved yet.</p>
+        <ul class="sh-list" id="shReqList"></ul>
+        <h2 style="margin-top:18px">Approved students</h2>
+        <p>The same list is used by the UniTrain simulator.</p>
+        <div class="sh-row"><input class="sh-input" type="email" id="shAddEmail" placeholder="student@gmail.com" aria-label="Student email"><button class="sh-btn" id="shAddBtn" type="button">Add</button></div>
+        <ul class="sh-list" id="shAllowList"></ul>
+        <div class="sh-msg" id="shStuMsg"></div>
+      </section>
+
+      <section id="shTabApp" hidden>
+        <p>The simulator is stored here, so only approved students can load it. Upload <b>MTS51_Simulator</b> (version 8 or newer) once, and again whenever there is a new version. The task solutions are taken out of the file and stored one by one, so a student can only read the solution of a task you opened.</p>
+        <div class="sh-row"><input type="file" id="shAppFile" accept=".html,text/html" aria-label="Simulator file"><button class="sh-btn primary" id="shUpload" type="button">Upload</button></div>
+        <div class="sh-msg" id="shAppMsg"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="shApp" hidden></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const VIEWS = ["shLoading", "shLogin", "shPending", "shMissing", "shAdmin"];
+  const show = (...ids) => { VIEWS.forEach((k) => ($(k).hidden = !ids.includes(k))); $("shShell").hidden = !ids.length; $("shApp").hidden = !!ids.length || !appLoaded; };
+  if (!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey) { $("shLoading").innerHTML = "<h1>Setup not finished</h1><p>firebase-config.js is missing.</p>"; return; }
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  const auth = firebase.auth(), db = firebase.firestore();
+  const APP_DOC = "app/mts51", OPEN_DOC = "settings/mts51", CODE = "mts51_code";
+  let appLoaded = false, isAdmin = false, unsubs = [], openNow = [];
+
+  document.querySelectorAll("[data-shtab]").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("[data-shtab]").forEach((x) => { x.setAttribute("aria-selected", String(x === b)); $(x.dataset.shtab).hidden = x !== b; });
+    if (b.dataset.shtab === "shTabOpen") buildOpenList();
+  }));
+  $("shGoogle").addEventListener("click", async () => {
+    $("shLoginMsg").textContent = "";
+    try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+    catch (e) { $("shLoginMsg").textContent = "Sign-in did not finish: " + (e.message || e.code); }
+  });
+  $("shSignOut").addEventListener("click", () => auth.signOut().then(() => location.reload()));
+
+  // Task solutions are read one at a time; Firestore refuses a task that is not open.
+  window.simGetCode = async (id) => { const d = await db.doc(CODE + "/" + id).get(); return d.exists ? d.data().code : ""; };
+
+  function runApp(html) {
+    if (appLoaded) return; appLoaded = true;
+    window.SIM_OPEN = isAdmin ? null : openNow.slice();
+    const tmp = document.createElement("div"); tmp.innerHTML = html;
+    const scripts = [...tmp.querySelectorAll("script")]; scripts.forEach((s) => s.remove());
+    $("shApp").innerHTML = tmp.innerHTML;
+    show();
+    scripts.forEach((s) => { const n = document.createElement("script"); n.textContent = s.textContent; document.body.appendChild(n); });
+  }
+  async function loadApp() {
+    const d = await db.doc(APP_DOC).get();
+    if (d.exists && d.data().html) runApp(d.data().html);
+    else if (isAdmin) { show("shAdmin"); document.querySelector('[data-shtab=shTabApp]').click(); $("shAppMsg").textContent = "Upload the simulator file to start."; }
+    else show("shMissing");
+  }
+  function setOpen(list) {
+    openNow = Array.isArray(list) ? list : [];
+    if (isAdmin) { $("shAdminInfo").textContent = "Open for students: " + summary(openNow); return; }
+    if (appLoaded && window.simSetOpen) window.simSetOpen(openNow);
+  }
+  function summary(list) {
+    if (!list.length) return "nothing";
+    const by = {}; list.forEach((id) => { const e = id.split("-")[0]; by[e] = (by[e] || 0) + 1; });
+    return Object.keys(by).sort((a, b) => a - b).map((e) => `Exp ${e} (${by[e]})`).join(", ");
+  }
+
+  auth.onAuthStateChanged(async (u) => {
+    unsubs.forEach((f) => f()); unsubs = [];
+    if (!u) { show("shLogin"); $("shUserBar").hidden = true; return; }
+    $("shUserBar").hidden = false; $("shWho").textContent = u.email;
+    const email = (u.email || "").toLowerCase();
+    // Only the instructor may list the requests (Firestore rules), so a successful read means admin.
+    try { await db.collection("requests").limit(1).get(); isAdmin = true; } catch (e) { isAdmin = false; }
+    let allowed = isAdmin;
+    if (!allowed) { try { allowed = (await db.doc("allowed/" + email).get()).exists; } catch (e) { allowed = false; } }
+    if (!allowed) {
+      $("shPendEmail").textContent = email; show("shPending");
+      db.doc("requests/" + u.uid).set({ email, name: u.displayName || "", at: Date.now(), app: "MTS-51" }).catch(() => {});
+      unsubs.push(db.doc("allowed/" + email).onSnapshot((d) => { if (d.exists) location.reload(); }, () => {}));
+      return;
+    }
+    db.doc("requests/" + u.uid).delete().catch(() => {});
+    if (isAdmin) { $("shAdminBar").hidden = false; adminSetup(); }
+    let first = true;
+    await new Promise((res) => unsubs.push(db.doc(OPEN_DOC).onSnapshot((d) => { setOpen(d.exists ? d.data().open : []); if (first) { first = false; res(); } }, () => { setOpen([]); if (first) { first = false; res(); } })));
+    await loadApp();
+  });
+
+  /* ---------------- control panel ---------------- */
+  function catalog() {
+    const S = window.__sim; if (!S) return null;
+    return [8, 9, 10, 11].map((n) => ({ n, lab: S.EXAMPLES.filter((e) => e.exp === n), task: S.TASKS.filter((e) => e.exp === n) }));
+  }
+  function buildOpenList() {
+    const cat = catalog(), box = $("shOpenList");
+    if (!cat) { box.innerHTML = "<p>Upload the simulator file first (Simulator file tab), then reload the page.</p>"; return; }
+    const set = new Set(openNow);
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    box.innerHTML = cat.map((x) => `<div class="sh-exp" data-exp="${x.n}">
+      <header><b>Experiment ${x.n}</b><span class="sh-row"><button class="sh-link" type="button" data-all="${x.n}" data-v="1">Open all</button> · <button class="sh-link" type="button" data-all="${x.n}" data-v="0">Close all</button></span></header>
+      <div class="sh-cols">
+        <div class="sh-col"><h3>Lab programs <button class="sh-link" type="button" data-grp="${x.n}-lab">all</button></h3>${x.lab.map((e) => `<label><input type="checkbox" value="${e.id}" data-g="${x.n}-lab" ${set.has(e.id) ? "checked" : ""}> ${x.n}-${esc(e.title)}</label>`).join("")}</div>
+        <div class="sh-col"><h3>Tasks (solved) <button class="sh-link" type="button" data-grp="${x.n}-task">all</button></h3>${x.task.map((e) => `<label><input type="checkbox" value="${e.id}" data-g="${x.n}-task" ${set.has(e.id) ? "checked" : ""}> ${esc(e.title)}</label>`).join("")}</div>
+      </div></div>`).join("");
+    box.querySelectorAll("[data-all]").forEach((b) => b.onclick = () => box.querySelectorAll(`[data-exp="${b.dataset.all}"] input`).forEach((c) => (c.checked = b.dataset.v === "1")));
+    box.querySelectorAll("[data-grp]").forEach((b) => b.onclick = () => { const cs = [...box.querySelectorAll(`input[data-g="${b.dataset.grp}"]`)]; const on = !cs.every((c) => c.checked); cs.forEach((c) => (c.checked = on)); });
+  }
+  function adminSetup() {
+    $("shOpenAdmin").addEventListener("click", () => { show("shAdmin"); buildOpenList(); });
+    $("shCloseAdmin").addEventListener("click", () => { if (appLoaded) show(); else loadApp(); });
+    $("shSaveOpen").addEventListener("click", async () => {
+      const open = [...document.querySelectorAll("#shOpenList input:checked")].map((c) => c.value);
+      $("shOpenMsg").textContent = "Saving…";
+      try { await db.doc(OPEN_DOC).set({ open, at: Date.now() }); $("shOpenMsg").textContent = "Saved. Students now see: " + summary(open) + "."; }
+      catch (e) { $("shOpenMsg").textContent = "Could not save: " + e.message; }
+    });
+    const badge = (n) => ["shReqBadge", "shReqBadge2"].forEach((b) => { $(b).hidden = !n; $(b).textContent = n; });
+    unsubs.push(db.collection("requests").onSnapshot((qs) => {
+      const ul = $("shReqList"); ul.innerHTML = ""; badge(qs.size);
+      if (!qs.size) ul.innerHTML = "<li><span>No new requests.</span></li>";
+      qs.forEach((d) => {
+        const r = d.data(), li = document.createElement("li");
+        const sp = document.createElement("span"); sp.textContent = (r.name ? r.name + " · " : "") + r.email + (r.app ? "  (" + r.app + ")" : "");
+        const ok = document.createElement("button"); ok.className = "sh-btn small"; ok.type = "button"; ok.textContent = "Approve";
+        ok.onclick = async () => { await db.doc("allowed/" + r.email).set({ email: r.email, name: r.name || "", at: Date.now() }); await d.ref.delete(); };
+        const no = document.createElement("button"); no.className = "sh-btn small danger"; no.type = "button"; no.textContent = "Refuse";
+        no.onclick = () => d.ref.delete();
+        const box = document.createElement("div"); box.className = "sh-row"; box.append(ok, no);
+        li.append(sp, box); ul.append(li);
+      });
+    }, (e) => ($("shStuMsg").textContent = "Requests could not load: " + e.message)));
+    unsubs.push(db.collection("allowed").onSnapshot((qs) => {
+      const ul = $("shAllowList"); ul.innerHTML = "";
+      if (!qs.size) ul.innerHTML = "<li><span>Nobody yet.</span></li>";
+      qs.forEach((d) => {
+        const r = d.data(), li = document.createElement("li");
+        const sp = document.createElement("span"); sp.textContent = (r.name ? r.name + " · " : "") + d.id;
+        const rm = document.createElement("button"); rm.className = "sh-btn small danger"; rm.type = "button"; rm.textContent = "Remove";
+        rm.onclick = () => { if (confirm("Remove " + d.id + "? They will lose access to both simulators.")) d.ref.delete(); };
+        li.append(sp, rm); ul.append(li);
+      });
+    }));
+    $("shAddBtn").addEventListener("click", async () => {
+      const e = $("shAddEmail").value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { $("shStuMsg").textContent = "Type a full email address."; return; }
+      await db.doc("allowed/" + e).set({ email: e, name: "", at: Date.now() }); $("shAddEmail").value = ""; $("shStuMsg").textContent = e + " added.";
+    });
+    $("shUpload").addEventListener("click", async () => {
+      const f = $("shAppFile").files[0], msg = $("shAppMsg");
+      if (!f) { msg.textContent = "Choose the simulator file first."; return; }
+      let html = await f.text();
+      if (!html.includes("simSetOpen")) { msg.textContent = "This is not the MTS-51 simulator (version 8 or newer)."; return; }
+      const a = html.indexOf("const TASKS = "), b = html.indexOf(";\nconst ALLPROGS", a);
+      let tasks;
+      try { tasks = JSON.parse(html.slice(a + 14, b)); } catch (e) { msg.textContent = "Could not read the task list in this file."; return; }
+      msg.textContent = "Uploading " + tasks.length + " task solutions…";
+      try {
+        const batch = db.batch();
+        tasks.forEach((t) => { if (t.code) batch.set(db.doc(CODE + "/" + t.id), { code: t.code, at: Date.now() }); t.code = ""; });
+        await batch.commit();
+        html = html.slice(0, a + 14) + JSON.stringify(tasks) + html.slice(b);
+        if (html.length > 1000000) { msg.textContent = "The file is too large for one document."; return; }
+        await db.doc(APP_DOC).set({ html, at: Date.now() });
+        msg.textContent = "Uploaded. Reload the page to use the new version.";
+      } catch (e) { msg.textContent = "Upload failed: " + e.message; }
+    });
+  }
+})();
+</script>
+</body>
+</html>
